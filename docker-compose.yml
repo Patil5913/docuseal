@@ -1,40 +1,87 @@
+version: '3.8'
+
 services:
   app:
     depends_on:
       postgres:
         condition: service_healthy
     image: docuseal/docuseal:latest
-    ports:
-      - 3000
+    restart: unless-stopped
     volumes:
       - ./docuseal:/data/docuseal
     environment:
-      - FORCE_SSL=${HOST}
       - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/docuseal
+      - FORCE_SSL=true  
+      - HOST=mern-blogging.vrugle.com
+    networks:
+      - docuseal-net
 
   postgres:
     image: postgres:15
+    restart: unless-stopped
     volumes:
-      - './pg_data:/var/lib/postgresql/data'
+      - ./pg_data:/var/lib/postgresql/data
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: vrugle
+      POSTGRES_PASSWORD: postgres
       POSTGRES_DB: docuseal
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
       timeout: 5s
       retries: 5
+    networks:
+      - docuseal-net
 
   caddy:
     image: caddy:latest
-    command: caddy reverse-proxy --from $$HOST --to app:3000
+    restart: unless-stopped
     ports:
-      - 80
-      - 443
-      - 443/udp
+      - "8080:80"
+      - "8443:443"
+      - "443:443/udp"
     volumes:
-      - .:/data
+      - ./caddy_data:/data
+      - ./caddy_config:/config
     environment:
       - HOST=mern-blogging.vrugle.com
+    command: ["caddy", "reverse-proxy", "--from", "$$HOST", "--to", "app:3000"]
+    networks:
+      - docuseal-net
 
+networks:
+  docuseal-net:
+    driver: bridge
+# services:
+#   app:
+#     depends_on:
+#       postgres:
+#         condition: service_healthy
+#     image: docuseal/docuseal:latest
+#     ports:
+#       - "3000:3000"  # Map directly to host for easy access
+#     volumes:
+#       - ./docuseal:/data/docuseal
+#     environment:
+#       - DATABASE_URL=postgresql://postgres:vrugle@postgres:5432/docuseal
+#       - FORCE_SSL=false  # Disable SSL for local development
+
+#   postgres:
+#     image: postgres:15
+#     volumes:
+#       - ./pg_data:/var/lib/postgresql/data
+#     environment:
+#       POSTGRES_USER: postgres
+#       POSTGRES_PASSWORD: vrugle
+#       POSTGRES_DB: docuseal
+#     healthcheck:
+#       test: ["CMD-SHELL", "pg_isready -U postgres"]
+#       interval: 5s
+#       timeout: 5s
+#       retries: 5
+
+#   caddy:
+#     image: caddy:latest
+#     command: ["caddy", "reverse-proxy", "--from", "localhost:80", "--to", "app:3000"]  # Proxy HTTP only
+#     ports:
+#       - "8080:80"  # Only HTTP (no HTTPS for localhost)
