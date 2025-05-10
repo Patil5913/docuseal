@@ -36,4 +36,5 @@ services:
     volumes:
       - .:/data
     environment:
-      - HOST=${HOST}
+      - HOST=mern-blogging.vrugle.com
+
