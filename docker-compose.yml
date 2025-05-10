@@ -2,13 +2,8 @@ version: '3.8'
 
 services:
   app:
-    depends_on:
-      postgres:
-        condition: service_healthy
     image: docuseal/docuseal:latest
     restart: unless-stopped
-    volumes:
-      - ./docuseal:/data/docuseal
     environment:
       - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/docuseal
       - FORCE_SSL=true
@@ -19,17 +14,12 @@ services:
   postgres:
     image: postgres:15
     restart: unless-stopped
-    volumes:
-      - ./pg_data:/var/lib/postgresql/data
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: docuseal
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
+    volumes:
+      - pg_data:/var/lib/postgresql/data
     networks:
       - docuseal-net
 
@@ -37,16 +27,14 @@ services:
     image: caddy:latest
     restart: unless-stopped
     ports:
-      - "3000"  # Map host 3000 → container 3000 (for Dokploy)
-    volumes:
-      - ./caddy_data:/data  # Certificate storage
-      - ./caddy_config:/config
-    environment:
-      - HOST=mern-blogging.vrugle.com
-    command: ["caddy", "reverse-proxy", "--from", ":2019", "--to", "app:3000"]
+      - "32794:3000"  # Using the already allocated port from your system
+    command: ["caddy", "reverse-proxy", "--from", ":3000", "--to", "app:3000"]
     networks:
       - docuseal-net
 
 networks:
   docuseal-net:
     driver: bridge
+
+volumes:
+  pg_data:
