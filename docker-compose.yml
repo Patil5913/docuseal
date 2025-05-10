@@ -5,7 +5,7 @@ services:
         condition: service_healthy
     image: docuseal/docuseal:latest
     ports:
-      - 3005:3000
+      - 3000
     volumes:
       - ./docuseal:/data/docuseal
     environment:
@@ -18,7 +18,7 @@ services:
       - './pg_data:/var/lib/postgresql/data'
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_PASSWORD: vrugle
       POSTGRES_DB: docuseal
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
@@ -30,9 +30,9 @@ services:
     image: caddy:latest
     command: caddy reverse-proxy --from $HOST --to app:3000
     ports:
-      - 8080:80
-      - 8443:443
-      - 8443:443/udp
+      - 80
+      - 443
+      - 443/udp
     volumes:
       - .:/data
     environment:
