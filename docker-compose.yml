@@ -28,7 +28,7 @@ services:
 
   caddy:
     image: caddy:latest
-    command: caddy reverse-proxy --from $HOST --to app:3000
+    command: caddy reverse-proxy --from $$HOST --to app:3000
     ports:
       - 80
       - 443
